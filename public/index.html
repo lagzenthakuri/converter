@@ -1,3 +1,4 @@
+<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,6 +168,42 @@
             margin-top: 10px;
         }
 
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .api-status {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 5px;
+            color: #7f8c8d;
+        }
+
+        .api-status.connected {
+            color: #27ae60;
+        }
+
+        .api-status.disconnected {
+            color: #c0392b;
+        }
+
         @media (max-width: 500px) {
             .converter-card {
                 padding: 20px;
@@ -210,6 +247,11 @@
                 <button id="resetBtn" class="reset">Reset</button>
             </div>
             
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <span>Converting...</span>
+            </div>
+            
             <div id="results" class="results" style="display: none;">
                 <div class="result-item">
                     <span>Decimal:</span>
@@ -242,6 +284,7 @@
             </div>
             
             <p class="info-text">Convert between different number systems with ease!</p>
+            <div id="apiStatus" class="api-status">Checking API connection...</div>
         </div>
     </div>
 
@@ -253,35 +296,24 @@
             const resetBtn = document.getElementById('resetBtn');
             const results = document.getElementById('results');
             const errorMsg = document.getElementById('errorMsg');
+            const loading = document.getElementById('loading');
+            const apiStatus = document.getElementById('apiStatus');
             
             const decimalResult = document.getElementById('decimalResult');
             const binaryResult = document.getElementById('binaryResult');
             const hexResult = document.getElementById('hexResult');
             const octalResult = document.getElementById('octalResult');
             
-            // Input validation patterns
+            // Validation patterns for client-side validation
             const validationPatterns = {
                 decimal: /^-?\d+$/,
                 binary: /^[01]+$/,
                 hexadecimal: /^[0-9A-Fa-f]+$/,
                 octal: /^[0-7]+$/
             };
-            
-            // Convert the input value to decimal based on input type
-            function toDecimal(value, type) {
-                switch(type) {
-                    case 'decimal':
-                        return parseInt(value, 10);
-                    case 'binary':
-                        return parseInt(value, 2);
-                    case 'hexadecimal':
-                        return parseInt(value, 16);
-                    case 'octal':
-                        return parseInt(value, 8);
-                    default:
-                        return NaN;
-                }
-            }
+
+            // Check API connection
+            checkApiConnection();
             
             // Validate the input value based on the selected type
             function validateInput() {
@@ -302,32 +334,55 @@
                 return true;
             }
             
-            // Convert the input value to all number systems
-            function convertValue() {
+            // Convert the input value using the API
+            async function convertValue() {
                 if (!validateInput()) return;
                 
                 const type = inputType.value;
                 const value = inputValue.value.trim();
                 
                 try {
-                    // Convert to decimal first
-                    const decimalValue = toDecimal(value, type);
+                    // Show loading indicator
+                    loading.style.display = 'block';
+                    results.style.display = 'none';
                     
-                    if (isNaN(decimalValue)) {
-                        errorMsg.textContent = 'Invalid number';
+                    // Call the API
+                    const response = await fetch('/api/convert', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            value: value,
+                            inputType: type
+                        }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Hide loading indicator
+                    loading.style.display = 'none';
+                    
+                    if (!data.success) {
+                        errorMsg.textContent = data.error || 'An error occurred';
                         return;
                     }
                     
-                    // Convert decimal to other number systems
-                    decimalResult.textContent = decimalValue;
-                    binaryResult.textContent = decimalValue.toString(2);
-                    hexResult.textContent = decimalValue.toString(16).toUpperCase();
-                    octalResult.textContent = decimalValue.toString(8);
+                    // Update results
+                    decimalResult.textContent = data.result.decimal;
+                    binaryResult.textContent = data.result.binary;
+                    hexResult.textContent = data.result.hexadecimal;
+                    octalResult.textContent = data.result.octal;
                     
                     // Show results
                     results.style.display = 'block';
                 } catch (error) {
-                    errorMsg.textContent = 'Conversion error: ' + error.message;
+                    loading.style.display = 'none';
+                    errorMsg.textContent = 'API error: ' + error.message;
+                    console.error('API error:', error);
+                    
+                    // Check API connection again
+                    checkApiConnection();
                 }
             }
             
@@ -354,6 +409,34 @@
                 }).catch(function(err) {
                     console.error('Could not copy text: ', err);
                 });
+            }
+            
+            // Check API connection
+            async function checkApiConnection() {
+                try {
+                    const response = await fetch('/api/convert', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            value: '1',
+                            inputType: 'decimal'
+                        }),
+                    });
+                    
+                    if (response.ok) {
+                        apiStatus.textContent = 'API connected';
+                        apiStatus.className = 'api-status connected';
+                    } else {
+                        apiStatus.textContent = 'API error: ' + response.statusText;
+                        apiStatus.className = 'api-status disconnected';
+                    }
+                } catch (error) {
+                    apiStatus.textContent = 'API disconnected';
+                    apiStatus.className = 'api-status disconnected';
+                    console.error('API connection error:', error);
+                }
             }
             
             // Event listeners
