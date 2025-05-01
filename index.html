@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number System Converter</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --background-color: #f8f9fa;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --error-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .converter-card {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 25px 0;
+        }
+
+        button {
+            flex: 1;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        button.reset {
+            background-color: #95a5a6;
+        }
+
+        button.reset:hover {
+            background-color: #7f8c8d;
+        }
+
+        .results {
+            background-color: #f1f8ff;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-item span:first-child {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .result-item span:last-child {
+            background-color: #e9f5ff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            max-width: 60%;
+            word-break: break-all;
+        }
+
+        .copy-button {
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin-left: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+
+        .copy-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .error {
+            color: var(--error-color);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 500px) {
+            .converter-card {
+                padding: 20px;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .result-item span:last-child {
+                max-width: 100%;
+                margin-top: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="converter-card">
+            <h1>Number System Converter</h1>
+            
+            <div class="input-group">
+                <label for="inputType">Input Type:</label>
+                <select id="inputType">
+                    <option value="decimal">Decimal</option>
+                    <option value="binary">Binary</option>
+                    <option value="hexadecimal">Hexadecimal</option>
+                    <option value="octal">Octal</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="inputValue">Enter Value:</label>
+                <input type="text" id="inputValue" placeholder="Enter a number">
+                <div id="errorMsg" class="error"></div>
+            </div>
+            
+            <div class="button-group">
+                <button id="convertBtn">Convert</button>
+                <button id="resetBtn" class="reset">Reset</button>
+            </div>
+            
+            <div id="results" class="results" style="display: none;">
+                <div class="result-item">
+                    <span>Decimal:</span>
+                    <div>
+                        <span id="decimalResult"></span>
+                        <button class="copy-button" data-result="decimalResult">Copy</button>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <span>Binary:</span>
+                    <div>
+                        <span id="binaryResult"></span>
+                        <button class="copy-button" data-result="binaryResult">Copy</button>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <span>Hexadecimal:</span>
+                    <div>
+                        <span id="hexResult"></span>
+                        <button class="copy-button" data-result="hexResult">Copy</button>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <span>Octal:</span>
+                    <div>
+                        <span id="octalResult"></span>
+                        <button class="copy-button" data-result="octalResult">Copy</button>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="info-text">Convert between different number systems with ease!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputType = document.getElementById('inputType');
+            const inputValue = document.getElementById('inputValue');
+            const convertBtn = document.getElementById('convertBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const results = document.getElementById('results');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            const decimalResult = document.getElementById('decimalResult');
+            const binaryResult = document.getElementById('binaryResult');
+            const hexResult = document.getElementById('hexResult');
+            const octalResult = document.getElementById('octalResult');
+            
+            // Input validation patterns
+            const validationPatterns = {
+                decimal: /^-?\d+$/,
+                binary: /^[01]+$/,
+                hexadecimal: /^[0-9A-Fa-f]+$/,
+                octal: /^[0-7]+$/
+            };
+            
+            // Convert the input value to decimal based on input type
+            function toDecimal(value, type) {
+                switch(type) {
+                    case 'decimal':
+                        return parseInt(value, 10);
+                    case 'binary':
+                        return parseInt(value, 2);
+                    case 'hexadecimal':
+                        return parseInt(value, 16);
+                    case 'octal':
+                        return parseInt(value, 8);
+                    default:
+                        return NaN;
+                }
+            }
+            
+            // Validate the input value based on the selected type
+            function validateInput() {
+                const type = inputType.value;
+                const value = inputValue.value.trim();
+                
+                if (value === '') {
+                    errorMsg.textContent = 'Please enter a value';
+                    return false;
+                }
+                
+                if (!validationPatterns[type].test(value)) {
+                    errorMsg.textContent = `Invalid ${type} number format`;
+                    return false;
+                }
+                
+                errorMsg.textContent = '';
+                return true;
+            }
+            
+            // Convert the input value to all number systems
+            function convertValue() {
+                if (!validateInput()) return;
+                
+                const type = inputType.value;
+                const value = inputValue.value.trim();
+                
+                try {
+                    // Convert to decimal first
+                    const decimalValue = toDecimal(value, type);
+                    
+                    if (isNaN(decimalValue)) {
+                        errorMsg.textContent = 'Invalid number';
+                        return;
+                    }
+                    
+                    // Convert decimal to other number systems
+                    decimalResult.textContent = decimalValue;
+                    binaryResult.textContent = decimalValue.toString(2);
+                    hexResult.textContent = decimalValue.toString(16).toUpperCase();
+                    octalResult.textContent = decimalValue.toString(8);
+                    
+                    // Show results
+                    results.style.display = 'block';
+                } catch (error) {
+                    errorMsg.textContent = 'Conversion error: ' + error.message;
+                }
+            }
+            
+            // Reset the form
+            function resetForm() {
+                inputValue.value = '';
+                errorMsg.textContent = '';
+                results.style.display = 'none';
+            }
+            
+            // Copy result to clipboard
+            function copyToClipboard(resultId) {
+                const resultElement = document.getElementById(resultId);
+                const text = resultElement.textContent;
+                
+                navigator.clipboard.writeText(text).then(function() {
+                    const copyBtn = document.querySelector(`[data-result="${resultId}"]`);
+                    const originalText = copyBtn.textContent;
+                    
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                    }, 1500);
+                }).catch(function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+            
+            // Event listeners
+            convertBtn.addEventListener('click', convertValue);
+            resetBtn.addEventListener('click', resetForm);
+            
+            inputValue.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    convertValue();
+                }
+            });
+            
+            // Event delegation for copy buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('copy-button')) {
+                    const resultId = e.target.getAttribute('data-result');
+                    copyToClipboard(resultId);
+                }
+            });
+            
+            // Auto-validate input when typing
+            inputValue.addEventListener('input', function() {
+                if (inputValue.value.trim() !== '') {
+                    validateInput();
+                } else {
+                    errorMsg.textContent = '';
+                }
+            });
+            
+            // Change input placeholder based on selected type
+            inputType.addEventListener('change', function() {
+                const type = inputType.value;
+                switch(type) {
+                    case 'decimal':
+                        inputValue.placeholder = 'Enter a decimal number (e.g., 42)';
+                        break;
+                    case 'binary':
+                        inputValue.placeholder = 'Enter a binary number (e.g., 101010)';
+                        break;
+                    case 'hexadecimal':
+                        inputValue.placeholder = 'Enter a hexadecimal number (e.g., 2A)';
+                        break;
+                    case 'octal':
+                        inputValue.placeholder = 'Enter an octal number (e.g., 52)';
+                        break;
+                }
+                
+                if (inputValue.value.trim() !== '') {
+                    validateInput();
+                }
+            });
+            
+            // Initialize placeholder
+            inputType.dispatchEvent(new Event('change'));
+        });
+    </script>
+</body>
+</html>
